@@ -74,3 +74,43 @@ class SessionExpiredError(ShapyException):
             detail="Session has expired",
             code="SESSION_EXPIRED",
         )
+
+
+class SessionOwnershipError(ShapyException):
+    def __init__(self, session_id: str):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied to session: {session_id}",
+            code="SESSION_OWNERSHIP_ERROR",
+        )
+
+
+class MaxSessionsError(ShapyException):
+    def __init__(self, limit: int):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Maximum sessions limit reached ({limit}). Delete an existing session first.",
+            code="MAX_SESSIONS_ERROR",
+        )
+
+
+class InvalidDrawingObjectError(ShapyException):
+    def __init__(self, errors: list[str]):
+        self.errors = errors
+        detail = f"Drawing validation failed with {len(errors)} error(s): {'; '.join(errors[:5])}"
+        if len(errors) > 5:
+            detail += f" ... and {len(errors) - 5} more"
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+            code="INVALID_DRAWING_OBJECT",
+        )
+
+
+class ContextTooLargeError(ShapyException):
+    def __init__(self, message: str):
+        super().__init__(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=message,
+            code="CONTEXT_TOO_LARGE",
+        )
