@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     max_sessions_per_user: int = 3
     max_objects_per_context: int = 100
     max_points_per_polyline: int = 500
+    max_layers_per_context: int = 25
+    max_context_size_kb: int = 2048
+    context_size_warning_kb: int = 500
 
 
 @lru_cache

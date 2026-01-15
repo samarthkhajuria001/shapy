@@ -144,6 +144,7 @@ def validate_drawing_objects(
     objects: list[Any],
     max_objects: int = 100,
     max_points_per_polyline: int = 500,
+    max_layers: int = 25,
 ) -> tuple[list[dict], list[str], list[str]]:
     """
     Validate a list of drawing objects.
@@ -152,6 +153,7 @@ def validate_drawing_objects(
         objects: List of raw drawing object dicts
         max_objects: Maximum allowed objects
         max_points_per_polyline: Maximum points per polyline
+        max_layers: Maximum unique layers allowed
 
     Returns:
         (validated_objects, all_warnings, all_errors)
@@ -168,6 +170,17 @@ def validate_drawing_objects(
 
     if len(objects) > max_objects:
         all_errors.append(f"too many objects: {len(objects)} (max {max_objects})")
+        return [], all_warnings, all_errors
+
+    unique_layers: set[str] = set()
+    for obj in objects:
+        if isinstance(obj, dict):
+            layer = obj.get("layer")
+            if layer and isinstance(layer, str):
+                unique_layers.add(layer)
+
+    if len(unique_layers) > max_layers:
+        all_errors.append(f"too many unique layers: {len(unique_layers)} (max {max_layers})")
         return [], all_warnings, all_errors
 
     for i, obj in enumerate(objects):

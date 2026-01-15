@@ -1,5 +1,6 @@
 """Session service for business logic."""
 
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
@@ -7,6 +8,7 @@ from redis.asyncio import Redis
 
 from app.config import Settings
 from app.core.exceptions import (
+    ContextTooLargeError,
     InvalidDrawingObjectError,
     MaxSessionsError,
     SessionNotFoundError,
@@ -112,13 +114,31 @@ class SessionService:
         Update drawing context for session.
         Validates all objects and generates metadata.
         Raises InvalidDrawingObjectError if validation fails.
+        Raises ContextTooLargeError if payload exceeds size limit.
         """
         meta = await self._get_meta_with_ownership(session_id, user_id)
+
+        payload_size_bytes = len(json.dumps(objects).encode("utf-8"))
+        payload_size_kb = payload_size_bytes / 1024
+
+        if payload_size_kb > self.settings.max_context_size_kb:
+            raise ContextTooLargeError(
+                f"Context payload too large: {payload_size_kb:.1f}KB "
+                f"(max {self.settings.max_context_size_kb}KB)"
+            )
+
+        size_warnings = []
+        if payload_size_kb > self.settings.context_size_warning_kb:
+            size_warnings.append(
+                f"Large context payload: {payload_size_kb:.1f}KB "
+                f"(consider reducing if performance issues occur)"
+            )
 
         validated_objects, warnings, errors = validate_drawing_objects(
             objects,
             max_objects=self.settings.max_objects_per_context,
             max_points_per_polyline=self.settings.max_points_per_polyline,
+            max_layers=self.settings.max_layers_per_context,
         )
 
         if errors:
@@ -137,7 +157,7 @@ class SessionService:
             object_count=metadata["object_count"],
             layers=metadata["layers_present"],
             layer_counts=metadata["layer_counts"],
-            warnings=warnings,
+            warnings=size_warnings + warnings,
             updated_at=datetime.fromisoformat(metadata["uploaded_at"]),
         )
 
