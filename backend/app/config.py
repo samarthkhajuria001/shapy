@@ -38,6 +38,11 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:4200", "http://localhost:3000"]
 
+    session_ttl_hours: int = 24
+    max_sessions_per_user: int = 3
+    max_objects_per_context: int = 100
+    max_points_per_polyline: int = 500
+
 
 @lru_cache
 def get_settings() -> Settings:
