@@ -38,6 +38,29 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:4200", "http://localhost:3000"]
 
+    # Indexing settings
+    chroma_path: str = "./data/chroma"
+    chroma_collection: str = "documents"
+    enrichment_model: str = "gpt-4o"
+    enrichment_batch_size: int = 10
+    enrichment_max_concurrent: int = 5
+    vision_model: str = "gpt-4o"
+
+    # Chunking settings
+    chunk_target_size: int = 600
+    chunk_min_size: int = 200
+    chunk_max_size: int = 1000
+    chunk_overlap: int = 100
+    parent_soft_limit_tokens: int = 600
+
+    # Retrieval settings
+    retrieval_top_k_per_query: int = 8
+    retrieval_top_n_parents: int = 3
+    retrieval_rrf_k: int = 60
+    enable_query_expansion: bool = True
+    enable_bm25: bool = True
+    enable_xref_expansion: bool = True
+
     session_ttl_hours: int = 24
     max_sessions_per_user: int = 3
     max_objects_per_context: int = 100

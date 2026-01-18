@@ -114,3 +114,39 @@ class ContextTooLargeError(ShapyException):
             detail=message,
             code="CONTEXT_TOO_LARGE",
         )
+
+
+class IndexingError(ShapyException):
+    """Base exception for indexing-related errors."""
+
+    def __init__(self, detail: str, code: str = "INDEXING_ERROR"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
+            code=code,
+        )
+
+
+class ChromaDBConnectionError(IndexingError):
+    def __init__(self, detail: str = "Failed to connect to ChromaDB"):
+        super().__init__(detail=detail, code="CHROMADB_CONNECTION_ERROR")
+
+
+class BM25IndexError(IndexingError):
+    def __init__(self, detail: str = "BM25 index operation failed"):
+        super().__init__(detail=detail, code="BM25_INDEX_ERROR")
+
+
+class PDFExtractionError(IndexingError):
+    def __init__(self, detail: str = "Failed to extract content from PDF"):
+        super().__init__(detail=detail, code="PDF_EXTRACTION_ERROR")
+
+
+class EnrichmentError(IndexingError):
+    def __init__(self, detail: str = "LLM enrichment failed"):
+        super().__init__(detail=detail, code="ENRICHMENT_ERROR")
+
+
+class RetrievalError(IndexingError):
+    def __init__(self, detail: str = "Document retrieval failed"):
+        super().__init__(detail=detail, code="RETRIEVAL_ERROR")

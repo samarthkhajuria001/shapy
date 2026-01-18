@@ -1,0 +1,3 @@
+# Ignore ChromaDB data files (generated at runtime)
+chroma/*
+!chroma/.gitkeep

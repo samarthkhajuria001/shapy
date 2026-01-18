@@ -11,3 +11,11 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 httpx>=0.26.0
 email-validator>=2.1.0
+
+# Phase 3: Indexing and Retrieval
+chromadb>=0.4.22
+rank-bm25>=0.2.2
+tiktoken>=0.5.2
+openai>=1.10.0
+pdfplumber>=0.10.3
+Pillow>=10.2.0
