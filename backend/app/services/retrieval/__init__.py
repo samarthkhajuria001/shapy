@@ -4,6 +4,7 @@ from .query_expander import QueryExpander
 from .hybrid_searcher import HybridSearcher, MatchedChild
 from .parent_ranker import ParentRanker, RankedParent
 from .xref_resolver import XRefResolver, ResolvedXRef, EnhancedParent
+from .context_assembler import ContextAssembler, AssembledContext
 
 __all__ = [
     "QueryExpander",
@@ -14,4 +15,6 @@ __all__ = [
     "XRefResolver",
     "ResolvedXRef",
     "EnhancedParent",
+    "ContextAssembler",
+    "AssembledContext",
 ]
