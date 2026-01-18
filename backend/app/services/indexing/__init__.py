@@ -10,6 +10,7 @@ from .pdf_extractor import (
 from .semantic_chunker import SemanticChunker, RawChild
 from .llm_enricher import LLMEnricher, EnrichedChild
 from .parent_grouper import ParentGrouper, Parent, ContentIndex
+from .storage import StorageLayer
 
 __all__ = [
     "IndexingInfrastructure",
@@ -24,4 +25,5 @@ __all__ = [
     "ParentGrouper",
     "Parent",
     "ContentIndex",
+    "StorageLayer",
 ]
