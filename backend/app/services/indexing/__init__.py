@@ -7,6 +7,8 @@ from .pdf_extractor import (
     ExtractedTable,
     ExtractedDiagram,
 )
+from .semantic_chunker import SemanticChunker, RawChild
+from .llm_enricher import LLMEnricher, EnrichedChild
 
 __all__ = [
     "IndexingInfrastructure",
@@ -14,4 +16,8 @@ __all__ = [
     "PageContent",
     "ExtractedTable",
     "ExtractedDiagram",
+    "SemanticChunker",
+    "RawChild",
+    "LLMEnricher",
+    "EnrichedChild",
 ]
