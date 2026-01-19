@@ -4,7 +4,7 @@ Defines the complete state structure that flows through the AI agent,
 including drawing context, retrieved rules, assumptions, and clarifications.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal, Optional, TypedDict
 
@@ -267,6 +267,11 @@ class RetrievedRule(BaseModel):
     def from_enhanced_parent(cls, parent_data: dict, score: float = 0.0) -> "RetrievedRule":
         """Create from Phase 3 EnhancedParent data dict."""
         content_index = parent_data.get("content_index", {})
+
+        # Check for cross-references which indicate exceptions or related rules
+        xrefs = content_index.get("xrefs", [])
+        has_exceptions = bool(xrefs)
+
         return cls(
             parent_id=parent_data.get("id", ""),
             text=parent_data.get("text", ""),
@@ -276,9 +281,9 @@ class RetrievedRule(BaseModel):
             source=parent_data.get("source", ""),
             relevance_score=score,
             uses_definitions=content_index.get("definitions_used", []),
-            xrefs=[],
+            xrefs=xrefs,
             sections_covered=content_index.get("sections_covered", []),
-            has_exceptions=False,
+            has_exceptions=has_exceptions,
             designated_land_specific="article 2(3)" in parent_data.get("text", "").lower(),
         )
 
@@ -319,12 +324,17 @@ class CalculationResult(BaseModel):
     )
 
 
+def _utc_now() -> datetime:
+    """Get current UTC time (timezone-aware)."""
+    return datetime.now(timezone.utc)
+
+
 class ConversationTurn(BaseModel):
     """A single turn in the conversation history."""
 
     role: Literal["user", "assistant"]
     content: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -392,7 +402,7 @@ def create_initial_state(
     Returns:
         Initialized AgentState ready for graph execution
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     conv_id = conversation_id or f"{session_id}_{int(now.timestamp())}"
 
     history_dicts = []
@@ -403,10 +413,14 @@ def create_initial_state(
     if drawing_context:
         context_dict = drawing_context.model_dump()
 
+    # Calculate turn number: each turn is a user+assistant pair
+    # If history has 4 messages (user, assistant, user, assistant), that's 2 complete turns
+    turn_number = (len(history_dicts) // 2) + 1
+
     return AgentState(
         session_id=session_id,
         conversation_id=conv_id,
-        turn_number=len(history_dicts) + 1,
+        turn_number=turn_number,
         user_query=user_query,
         query_type=QueryType.GENERAL.value,
         query_intent="",

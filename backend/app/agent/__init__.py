@@ -25,8 +25,17 @@ from .state import (
     has_critical_missing_info,
     is_compliance_query,
 )
+from .nodes import (
+    classifier_node,
+    context_loader_node,
+    retriever_node,
+    update_context_from_clarification,
+    get_definitions_for_rules,
+    GLOBAL_DEFINITIONS,
+)
 
 __all__ = [
+    # State
     "AgentState",
     "Assumption",
     "AssumptionSource",
@@ -41,6 +50,7 @@ __all__ = [
     "MissingInfoType",
     "QueryType",
     "RetrievedRule",
+    # State helpers
     "add_reasoning_step",
     "create_initial_state",
     "get_assumptions",
@@ -50,4 +60,11 @@ __all__ = [
     "get_retrieved_rules",
     "has_critical_missing_info",
     "is_compliance_query",
+    # Nodes
+    "classifier_node",
+    "context_loader_node",
+    "retriever_node",
+    "update_context_from_clarification",
+    "get_definitions_for_rules",
+    "GLOBAL_DEFINITIONS",
 ]
