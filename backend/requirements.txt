@@ -22,3 +22,7 @@ Pillow>=10.2.0
 
 # Phase 4: AI Agent
 langgraph>=0.0.40
+
+# Testing
+pytest
+pytest-asyncio
