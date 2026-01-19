@@ -72,6 +72,7 @@ class TestClassifierNode:
 
         assert result["query_type"] in [
             QueryType.COMPLIANCE_CHECK.value,
+            QueryType.LEGAL_SEARCH.value,
             QueryType.GENERAL.value,
         ]
 
@@ -418,7 +419,7 @@ class TestResponseFormatterNode:
         result = await response_formatter_node(state)
 
         assert "Assumptions Made" in result["final_answer"]
-        assert "Disclaimer" in result["final_answer"]
+        assert "AI-generated guidance" in result["final_answer"]
 
     @pytest.mark.asyncio
     async def test_adds_caveats_section(self):
