@@ -19,3 +19,6 @@ tiktoken>=0.5.2
 openai>=1.10.0
 pdfplumber>=0.10.3
 Pillow>=10.2.0
+
+# Phase 4: AI Agent
+langgraph>=0.0.40
