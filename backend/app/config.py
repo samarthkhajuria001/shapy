@@ -69,6 +69,17 @@ class Settings(BaseSettings):
     max_context_size_kb: int = 2048
     context_size_warning_kb: int = 500
 
+    # Agent settings
+    agent_model: str = "gpt-4o"
+    agent_temperature: float = 0.1
+    agent_max_tokens: int = 2000
+    agent_classifier_model: str = "gpt-4o-mini"
+    agent_clarifier_model: str = "gpt-4o-mini"
+    agent_max_clarification_rounds: int = 3
+    agent_context_token_budget: int = 4000
+    agent_enable_assumptions: bool = True
+    agent_enable_clarifications: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:
