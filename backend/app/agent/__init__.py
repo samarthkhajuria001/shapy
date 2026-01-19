@@ -36,10 +36,29 @@ from .nodes import (
     get_critical_missing_info,
     TEMPORAL_DEFINITIONS,
     CONTEXTUAL_DEFINITIONS,
+    clarification_router_node,
+    get_routing_decision,
+    clarifier_node,
+    parse_clarification_response,
+    calculator_node,
+    reasoner_node,
+    response_formatter_node,
+    extract_raw_answer,
+)
+from .graph import (
+    create_agent_graph,
+    get_agent_graph,
+    reset_agent_graph,
+)
+from .orchestrator import (
+    AgentOrchestrator,
+    AgentResponse,
+    ConversationContext,
+    get_orchestrator,
+    process_chat_query,
 )
 
 __all__ = [
-    # State
     "AgentState",
     "Assumption",
     "AssumptionSource",
@@ -54,7 +73,6 @@ __all__ = [
     "MissingInfoType",
     "QueryType",
     "RetrievedRule",
-    # State helpers
     "add_reasoning_step",
     "create_initial_state",
     "get_assumptions",
@@ -64,7 +82,6 @@ __all__ = [
     "get_retrieved_rules",
     "has_critical_missing_info",
     "is_compliance_query",
-    # Nodes
     "classifier_node",
     "context_loader_node",
     "retriever_node",
@@ -75,4 +92,20 @@ __all__ = [
     "get_critical_missing_info",
     "TEMPORAL_DEFINITIONS",
     "CONTEXTUAL_DEFINITIONS",
+    "clarification_router_node",
+    "get_routing_decision",
+    "clarifier_node",
+    "parse_clarification_response",
+    "calculator_node",
+    "reasoner_node",
+    "response_formatter_node",
+    "extract_raw_answer",
+    "create_agent_graph",
+    "get_agent_graph",
+    "reset_agent_graph",
+    "AgentOrchestrator",
+    "AgentResponse",
+    "ConversationContext",
+    "get_orchestrator",
+    "process_chat_query",
 ]
