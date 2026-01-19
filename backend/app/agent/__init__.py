@@ -32,6 +32,10 @@ from .nodes import (
     update_context_from_clarification,
     get_definitions_for_rules,
     GLOBAL_DEFINITIONS,
+    assumption_analyzer_node,
+    get_critical_missing_info,
+    TEMPORAL_DEFINITIONS,
+    CONTEXTUAL_DEFINITIONS,
 )
 
 __all__ = [
@@ -67,4 +71,8 @@ __all__ = [
     "update_context_from_clarification",
     "get_definitions_for_rules",
     "GLOBAL_DEFINITIONS",
+    "assumption_analyzer_node",
+    "get_critical_missing_info",
+    "TEMPORAL_DEFINITIONS",
+    "CONTEXTUAL_DEFINITIONS",
 ]

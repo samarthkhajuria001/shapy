@@ -10,6 +10,12 @@ from .retriever import (
     get_definitions_for_rules,
     GLOBAL_DEFINITIONS,
 )
+from .assumption_analyzer import (
+    assumption_analyzer_node,
+    get_critical_missing_info,
+    TEMPORAL_DEFINITIONS,
+    CONTEXTUAL_DEFINITIONS,
+)
 
 __all__ = [
     "classifier_node",
@@ -18,4 +24,8 @@ __all__ = [
     "retriever_node",
     "get_definitions_for_rules",
     "GLOBAL_DEFINITIONS",
+    "assumption_analyzer_node",
+    "get_critical_missing_info",
+    "TEMPORAL_DEFINITIONS",
+    "CONTEXTUAL_DEFINITIONS",
 ]
