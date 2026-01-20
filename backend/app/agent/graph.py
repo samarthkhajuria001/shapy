@@ -3,14 +3,24 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import Any, Literal
 
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.runnables import RunnableConfig
 
 from app.agent.state import AgentState, QueryType
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_openai_client(config: RunnableConfig | None):
+    """Extract OpenAI client from LangGraph config."""
+    if config is None:
+        return None
+    configurable = config.get("configurable", {})
+    return configurable.get("openai_client")
 
 
 def route_by_query_type(state: AgentState) -> str:
@@ -111,17 +121,31 @@ def create_agent_graph(use_checkpointer: bool = False) -> StateGraph:
     from app.agent.nodes.reasoner import reasoner_node
     from app.agent.nodes.response_formatter import response_formatter_node
 
+    # Create wrapper functions that extract openai_client from config
+    async def classifier_with_config(state: AgentState, config: RunnableConfig) -> dict:
+        openai_client = _extract_openai_client(config)
+        return await classifier_node(state, openai_client)
+
+    async def clarifier_with_config(state: AgentState, config: RunnableConfig) -> dict:
+        openai_client = _extract_openai_client(config)
+        return await clarifier_node(state, openai_client)
+
+    async def reasoner_with_config(state: AgentState, config: RunnableConfig) -> dict:
+        openai_client = _extract_openai_client(config)
+        return await reasoner_node(state, openai_client)
+
     graph = StateGraph(AgentState)
 
-    graph.add_node("classifier", classifier_node)
+    # Nodes that need OpenAI client use wrapped versions
+    graph.add_node("classifier", classifier_with_config)
     graph.add_node("context_loader", context_loader_node)
     graph.add_node("retriever", retriever_node)
     graph.add_node("assumption_analyzer", assumption_analyzer_node)
     graph.add_node("clarification_router", clarification_router_node)
-    graph.add_node("clarifier", clarifier_node)
+    graph.add_node("clarifier", clarifier_with_config)
     graph.add_node("calculator", calculator_node)
     graph.add_node("validator", validator_node)
-    graph.add_node("reasoner", reasoner_node)
+    graph.add_node("reasoner", reasoner_with_config)
     graph.add_node("response_formatter", response_formatter_node)
 
     graph.set_entry_point("classifier")

@@ -357,7 +357,7 @@ async def assumption_analyzer_node(state: AgentState) -> dict[str, Any]:
     for rule in retrieved_rules:
         uses_definitions = rule.get("uses_definitions", [])
         rule_text = rule.get("text", "")
-        rule_section = rule.get("section", "unknown")
+        rule_section = rule.get("section") or "unknown"  # Handle None explicitly
 
         for def_key, spec in TEMPORAL_DEFINITIONS.items():
             if def_key in detected_definitions:
@@ -389,6 +389,9 @@ async def assumption_analyzer_node(state: AgentState) -> dict[str, Any]:
                 detected_definitions[def_key] = (spec, [rule_section])
 
     for def_key, (spec, affected_sections) in detected_definitions.items():
+        # Filter out None values from affected_sections
+        affected_sections = [s for s in affected_sections if s is not None]
+
         current_value = _get_context_value(drawing_context, spec.field_name)
         question_id = f"clarify_{def_key}"
 

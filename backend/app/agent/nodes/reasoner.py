@@ -143,6 +143,28 @@ async def reasoner_node(
         if caveat not in existing_caveats:
             existing_caveats.append(caveat)
 
+    # Check for off-topic queries before calling LLM (saves tokens & gives better UX)
+    if not rules and _is_off_topic_query(query):
+        greeting_response = (
+            "Hello! I'm Shapy, your UK planning permission assistant. "
+            "I specialize in Permitted Development rights and can help you with questions like:\n\n"
+            "- What extensions are allowed under Permitted Development?\n"
+            "- What are the height limits for a rear extension?\n"
+            "- Does my property comply with the 50% rule?\n\n"
+            "How can I help you with your planning question today?"
+        )
+        return {
+            "final_answer": greeting_response,
+            "confidence": ConfidenceLevel.HIGH.value,
+            "compliance_verdict": None,
+            "suggested_followups": [
+                "What are the rules for rear extensions?",
+                "How do I check if I need planning permission?",
+            ],
+            "caveats": [],
+            "reasoning_chain": add_reasoning_step(state, "Responded to greeting/off-topic query"),
+        }
+
     user_prompt = build_reasoner_prompt(
         query=query,
         definitions=definitions,
@@ -213,6 +235,38 @@ async def reasoner_node(
     }
 
 
+def _is_off_topic_query(query: str) -> bool:
+    """Check if the query is off-topic (not about UK planning/building)."""
+    query_lower = query.lower().strip()
+
+    # Greetings and conversational patterns
+    greeting_patterns = [
+        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+        "what's up", "whats up", "how are you", "how r u", "sup",
+        "what are you", "who are you", "what can you do",
+    ]
+
+    for pattern in greeting_patterns:
+        if query_lower == pattern or query_lower.startswith(pattern + " ") or query_lower.startswith(pattern + "?"):
+            return True
+
+    # Very short queries without planning-related keywords
+    planning_keywords = [
+        "planning", "permission", "extension", "build", "house", "property",
+        "development", "permitted", "boundary", "height", "depth", "area",
+        "garage", "shed", "conservatory", "loft", "roof", "wall", "fence",
+        "garden", "patio", "deck", "outbuilding", "annexe", "convert",
+        "regulation", "rule", "limit", "maximum", "minimum", "comply",
+    ]
+
+    if len(query_lower) < 20:
+        has_planning_keyword = any(kw in query_lower for kw in planning_keywords)
+        if not has_planning_keyword:
+            return True
+
+    return False
+
+
 def _generate_fallback_answer(
     query: str,
     query_type: str,
@@ -223,6 +277,17 @@ def _generate_fallback_answer(
     parts = []
 
     if not rules:
+        # Check if this is an off-topic/conversational query
+        if _is_off_topic_query(query):
+            return (
+                "I'm a UK planning permission assistant, specializing in Permitted Development rights. "
+                "I can help you with questions like:\n\n"
+                "- What extensions are allowed under Permitted Development?\n"
+                "- What are the height limits for a rear extension?\n"
+                "- Does my property comply with the 50% rule?\n\n"
+                "How can I help you with your planning question?"
+            )
+
         parts.append(
             "I found limited information about your question in my knowledge base. "
             "For specific guidance, please consult your local planning authority."
