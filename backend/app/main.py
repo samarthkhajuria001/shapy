@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.api.routes import auth, health, session, chat
+from app.api.ws import chat_router as ws_chat_router
 from app.infrastructure.database import init_db, close_db
 from app.infrastructure.redis import init_redis, close_redis
 
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
     app.include_router(session.router, prefix="/api/v1/session", tags=["Session"])
     app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
+    app.include_router(ws_chat_router, prefix="/ws", tags=["WebSocket"])
 
     return app
 
