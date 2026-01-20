@@ -82,8 +82,11 @@ def create_agent_graph(use_checkpointer: bool = False) -> StateGraph:
                 v         v        v
            clarifier  calculator  reasoner
                 |         |        |
-                v         +--------+
-              [END]              |
+                v         v        |
+              [END]   validator    |
+                          |        |
+                          +--------+
+                                 |
                                  v
                           response_formatter
                                  |
@@ -104,6 +107,7 @@ def create_agent_graph(use_checkpointer: bool = False) -> StateGraph:
     from app.agent.nodes.clarification_router import clarification_router_node
     from app.agent.nodes.clarifier import clarifier_node
     from app.agent.nodes.calculator import calculator_node
+    from app.agent.nodes.validator import validator_node
     from app.agent.nodes.reasoner import reasoner_node
     from app.agent.nodes.response_formatter import response_formatter_node
 
@@ -116,6 +120,7 @@ def create_agent_graph(use_checkpointer: bool = False) -> StateGraph:
     graph.add_node("clarification_router", clarification_router_node)
     graph.add_node("clarifier", clarifier_node)
     graph.add_node("calculator", calculator_node)
+    graph.add_node("validator", validator_node)
     graph.add_node("reasoner", reasoner_node)
     graph.add_node("response_formatter", response_formatter_node)
 
@@ -149,7 +154,8 @@ def create_agent_graph(use_checkpointer: bool = False) -> StateGraph:
 
     graph.add_edge("clarifier", END)
 
-    graph.add_edge("calculator", "reasoner")
+    graph.add_edge("calculator", "validator")
+    graph.add_edge("validator", "reasoner")
 
     graph.add_edge("reasoner", "response_formatter")
 

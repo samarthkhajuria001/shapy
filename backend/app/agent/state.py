@@ -289,7 +289,7 @@ class RetrievedRule(BaseModel):
 
 
 class CalculationResult(BaseModel):
-    """Result from Phase 5 geometric calculator."""
+    """Result from geometric calculator."""
 
     calculation_type: str = Field(
         ...,
@@ -321,6 +321,76 @@ class CalculationResult(BaseModel):
     notes: Optional[str] = Field(
         None,
         description="Additional notes about the calculation",
+    )
+
+
+class ComplianceCheck(BaseModel):
+    """Result from a compliance rule check."""
+
+    rule_id: str = Field(
+        ...,
+        description="Rule identifier (e.g., 'A.1(f)')",
+    )
+    rule_description: str = Field(
+        ...,
+        description="Human-readable description of the rule",
+    )
+    pdf_page: Optional[int] = Field(
+        None,
+        description="Reference page in the regulations PDF",
+    )
+    compliant: Optional[bool] = Field(
+        None,
+        description="True if compliant, False if non-compliant, None if inconclusive",
+    )
+    measured_value: Optional[float] = Field(
+        None,
+        description="The measured/calculated value",
+    )
+    threshold: Optional[float] = Field(
+        None,
+        description="The regulatory threshold/limit",
+    )
+    unit: Optional[str] = Field(
+        None,
+        description="Unit of measurement",
+    )
+    message: str = Field(
+        default="",
+        description="Detailed explanation of the check result",
+    )
+    error: Optional[str] = Field(
+        None,
+        description="Error message if check could not be performed",
+    )
+
+
+class ComplianceSummary(BaseModel):
+    """Summary of all compliance checks."""
+
+    overall_compliant: Optional[bool] = Field(
+        None,
+        description="True if all rules pass, False if any fail, None if inconclusive",
+    )
+    rules_checked: int = Field(
+        default=0,
+        description="Total number of rules evaluated",
+    )
+    rules_passed: int = Field(
+        default=0,
+        description="Number of rules that passed",
+    )
+    rules_failed: int = Field(
+        default=0,
+        description="Number of rules that failed",
+    )
+    rules_inconclusive: int = Field(
+        default=0,
+        description="Number of rules that could not be evaluated",
+    )
+    verdict: str = Field(
+        default="",
+        description="Human-readable verdict summary",
     )
 
 
@@ -368,6 +438,9 @@ class AgentState(TypedDict, total=False):
     calculation_results: list[dict]
     pending_calculations: list[str]
     spatial_analysis: Optional[dict]  # Spatial inference results from geometry engine
+
+    compliance_checks: list[dict]  # Results from validator node rule checks
+    compliance_summary: Optional[dict]  # Summary of compliance evaluation
 
     assumptions: list[dict]
     missing_info: list[str]
@@ -438,6 +511,8 @@ def create_initial_state(
         calculation_results=[],
         pending_calculations=[],
         spatial_analysis=None,
+        compliance_checks=[],
+        compliance_summary=None,
         assumptions=[],
         missing_info=[],
         clarification_questions=[],
@@ -544,6 +619,34 @@ def get_spatial_analysis(state: AgentState) -> Optional[dict]:
         Spatial analysis dict or None if not performed
     """
     return state.get("spatial_analysis")
+
+
+def get_compliance_checks(state: AgentState) -> list[ComplianceCheck]:
+    """Extract ComplianceCheck models from state dict.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        List of ComplianceCheck models
+    """
+    check_dicts = state.get("compliance_checks", [])
+    return [ComplianceCheck.model_validate(c) for c in check_dicts]
+
+
+def get_compliance_summary(state: AgentState) -> Optional[ComplianceSummary]:
+    """Extract ComplianceSummary model from state dict.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        ComplianceSummary model or None if not evaluated
+    """
+    summary_dict = state.get("compliance_summary")
+    if summary_dict is None:
+        return None
+    return ComplianceSummary.model_validate(summary_dict)
 
 
 def has_critical_missing_info(state: AgentState) -> bool:

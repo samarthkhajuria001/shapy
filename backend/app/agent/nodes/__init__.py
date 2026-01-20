@@ -25,6 +25,7 @@ from .clarifier import (
     parse_clarification_response,
 )
 from .calculator import calculator_node
+from .validator import validator_node
 from .reasoner import reasoner_node
 from .response_formatter import (
     response_formatter_node,
@@ -47,6 +48,7 @@ __all__ = [
     "clarifier_node",
     "parse_clarification_response",
     "calculator_node",
+    "validator_node",
     "reasoner_node",
     "response_formatter_node",
     "extract_raw_answer",
