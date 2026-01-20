@@ -37,6 +37,10 @@ Powered by a LangGraph orchestrator, this system moves beyond simple chains to a
 ### Interactive Frontend
 An Angular based UI for visualizing drawings, managing sessions, and streaming reasoning steps in real time.
 
+### Application Preview
+![Application Interface 1](Screenshots/Screenshot%202026-01-20%20at%2011.52.32%E2%80%AFPM.png)
+![Application Interface 2](Screenshots/Screenshot%202026-01-20%20at%2011.53.29%E2%80%AFPM.png)
+
 ## Architecture
 
 Shapy is built on a modern, event driven architecture designed for scalability and precision.
