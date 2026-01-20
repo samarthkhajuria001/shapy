@@ -357,6 +357,7 @@ class AgentState(TypedDict, total=False):
     query_intent: str
 
     drawing_context: Optional[dict]
+    raw_drawing_objects: list[dict]  # Raw JSON drawing objects for geometry parsing
     conversation_history: list[dict]
 
     retrieved_rules: list[dict]
@@ -366,6 +367,7 @@ class AgentState(TypedDict, total=False):
 
     calculation_results: list[dict]
     pending_calculations: list[str]
+    spatial_analysis: Optional[dict]  # Spatial inference results from geometry engine
 
     assumptions: list[dict]
     missing_info: list[str]
@@ -389,6 +391,7 @@ def create_initial_state(
     conversation_id: Optional[str] = None,
     drawing_context: Optional[DrawingContext] = None,
     conversation_history: Optional[list[ConversationTurn]] = None,
+    raw_drawing_objects: Optional[list[dict]] = None,
 ) -> AgentState:
     """Create initial agent state for a new query.
 
@@ -398,6 +401,7 @@ def create_initial_state(
         conversation_id: Optional ID for multi-turn tracking
         drawing_context: Optional pre-loaded drawing context
         conversation_history: Optional prior conversation turns
+        raw_drawing_objects: Optional raw JSON drawing objects for geometry parsing
 
     Returns:
         Initialized AgentState ready for graph execution
@@ -425,6 +429,7 @@ def create_initial_state(
         query_type=QueryType.GENERAL.value,
         query_intent="",
         drawing_context=context_dict,
+        raw_drawing_objects=raw_drawing_objects or [],
         conversation_history=history_dicts,
         retrieved_rules=[],
         global_definitions={},
@@ -432,6 +437,7 @@ def create_initial_state(
         context_text="",
         calculation_results=[],
         pending_calculations=[],
+        spatial_analysis=None,
         assumptions=[],
         missing_info=[],
         clarification_questions=[],
@@ -526,6 +532,18 @@ def get_calculation_results(state: AgentState) -> list[CalculationResult]:
     """
     calc_dicts = state.get("calculation_results", [])
     return [CalculationResult.model_validate(c) for c in calc_dicts]
+
+
+def get_spatial_analysis(state: AgentState) -> Optional[dict]:
+    """Extract spatial analysis results from state dict.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        Spatial analysis dict or None if not performed
+    """
+    return state.get("spatial_analysis")
 
 
 def has_critical_missing_info(state: AgentState) -> bool:
