@@ -1,10 +1,16 @@
-"""Core geometry calculation engine using Shapely."""
+"""Core geometry calculation engine using Shapely.
+
+Provides precise geometric calculations for UK Permitted Development compliance.
+All internal measurements are in millimeters, converted to meters for output.
+"""
 
 import math
 from typing import Any, Optional
 
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points, unary_union
+
+from app.geometry.types import CalculationOutput
 
 
 class GeometryCalculator:
@@ -19,7 +25,15 @@ class GeometryCalculator:
         points: list[tuple[float, float]],
         unit: str = "m2",
     ) -> dict[str, Any]:
-        """Calculate area of a polygon using Shapely."""
+        """Calculate area of a polygon using Shapely.
+
+        Args:
+            points: List of (x, y) coordinates in mm
+            unit: Output unit, either "mm2" or "m2"
+
+        Returns:
+            Dictionary with area, unit, and polygon object
+        """
         if len(points) < 3:
             return {"error": "Need at least 3 points", "area": 0, "polygon": None}
 
@@ -47,7 +61,19 @@ class GeometryCalculator:
         buildings: list[Polygon],
         original_house: Optional[Polygon] = None,
     ) -> dict[str, Any]:
-        """Calculate building coverage ratio per Class A.1(b)."""
+        """Calculate building coverage ratio per Class A.1(b).
+
+        The 50% rule: Total area of buildings (excluding original house)
+        must not exceed 50% of curtilage (excluding original house area).
+
+        Args:
+            plot_boundary: The curtilage/plot polygon
+            buildings: All building footprints
+            original_house: The original dwelling footprint (to exclude)
+
+        Returns:
+            Dictionary with coverage calculations and compliance status
+        """
         curtilage_area = plot_boundary.area
 
         all_buildings = unary_union(buildings)
@@ -82,7 +108,18 @@ class GeometryCalculator:
         extension: Polygon,
         rear_wall: LineString,
     ) -> dict[str, Any]:
-        """Calculate how far an extension projects beyond a rear wall."""
+        """Calculate how far an extension projects beyond a rear wall.
+
+        Measurement is from the base of the rear wall to the outer edge
+        of the extension wall, perpendicular to the rear wall.
+
+        Args:
+            extension: The extension polygon
+            rear_wall: The rear wall line segment
+
+        Returns:
+            Dictionary with depth measurements
+        """
         extension_coords = list(extension.exterior.coords)
         max_distance = 0
 
@@ -103,7 +140,17 @@ class GeometryCalculator:
         building: Polygon,
         boundary: Polygon,
     ) -> dict[str, Any]:
-        """Calculate minimum distance from building to plot boundary."""
+        """Calculate minimum distance from building to plot boundary.
+
+        Used for the 2-metre boundary rule (Class A.1(i)).
+
+        Args:
+            building: Building footprint polygon
+            boundary: Plot boundary polygon
+
+        Returns:
+            Dictionary with distance and compliance info
+        """
         boundary_ring = boundary.exterior
         building_ring = building.exterior
 
@@ -123,7 +170,15 @@ class GeometryCalculator:
         building: Polygon,
         highways: list[LineString],
     ) -> dict[str, Any]:
-        """Calculate distance from building to nearest highway."""
+        """Calculate distance from building to nearest highway.
+
+        Args:
+            building: Building footprint polygon
+            highways: List of highway line segments
+
+        Returns:
+            Dictionary with distance to nearest highway
+        """
         if not highways:
             return {"error": "No highways provided", "distance_m": None}
 
@@ -149,7 +204,18 @@ class GeometryCalculator:
         building: Polygon,
         direction: str = "auto",
     ) -> dict[str, Any]:
-        """Calculate the width of a building footprint."""
+        """Calculate the width of a building footprint.
+
+        Width is measured perpendicular to the principal elevation.
+        For the side extension rule (Class A.1(j)(iii)).
+
+        Args:
+            building: Building footprint polygon
+            direction: "auto" to detect, or "x"/"y" for specific axis
+
+        Returns:
+            Dictionary with width and length measurements
+        """
         if direction == "auto":
             mbr = building.minimum_rotated_rectangle
             mbr_coords = list(mbr.exterior.coords)
@@ -180,7 +246,18 @@ class GeometryCalculator:
         original_house: Polygon,
         extension: Polygon,
     ) -> dict[str, Any]:
-        """Check if side extension exceeds half the width of original house."""
+        """Check if side extension exceeds half the width of original house.
+
+        Per Class A.1(j)(iii): Side extension must not have a width greater
+        than half the width of the original dwellinghouse.
+
+        Args:
+            original_house: Original house footprint
+            extension: Extension footprint
+
+        Returns:
+            Dictionary with width comparison and compliance status
+        """
         original_dims = self.calculate_building_width(original_house)
         extension_dims = self.calculate_building_width(extension)
 
@@ -204,7 +281,20 @@ class GeometryCalculator:
         reference_wall: LineString,
         boundary: Polygon,
     ) -> dict[str, Any]:
-        """Check if extension extends beyond a wall line to the boundary."""
+        """Check if extension extends beyond a wall line to the boundary.
+
+        Per PDF Page 14: 'extend beyond a wall' comprises not only the area
+        immediately in front of the wall, but also an area in front of a line
+        drawn from the end of the wall to the boundary of the property.
+
+        Args:
+            extension: Extension polygon
+            reference_wall: Principal or side wall to check against
+            boundary: Plot boundary polygon
+
+        Returns:
+            Dictionary with extension status
+        """
         extended_line = self._extend_line_to_boundary(reference_wall, boundary)
         extension_intersects = extended_line.intersects(extension)
 
@@ -260,3 +350,202 @@ class GeometryCalculator:
         clipped = extended.intersection(boundary)
 
         return clipped if clipped.geom_type == "LineString" else line
+
+    def calculate_outputs(
+        self,
+        parsed: dict[str, Any],
+        spatial: dict[str, Any],
+        query: str,
+    ) -> list[CalculationOutput]:
+        """Determine and perform calculations based on query keywords.
+
+        Args:
+            parsed: Parsed drawing objects
+            spatial: Spatial analysis results
+            query: User query to determine needed calculations
+
+        Returns:
+            List of calculation outputs
+        """
+        query_lower = query.lower()
+        results: list[CalculationOutput] = []
+
+        if self._needs_area_calculation(query_lower):
+            results.extend(self._perform_area_calculations(parsed, spatial))
+
+        if self._needs_distance_calculation(query_lower):
+            results.extend(self._perform_distance_calculations(parsed, spatial))
+
+        if self._needs_extension_calculation(query_lower):
+            results.extend(self._perform_extension_calculations(parsed, spatial))
+
+        if self._needs_width_calculation(query_lower):
+            results.extend(self._perform_width_calculations(parsed, spatial))
+
+        return results
+
+    def _needs_area_calculation(self, query: str) -> bool:
+        keywords = ["area", "size", "square", "coverage", "50%", "curtilage"]
+        return any(kw in query for kw in keywords)
+
+    def _needs_distance_calculation(self, query: str) -> bool:
+        keywords = ["distance", "from boundary", "metres from", "within", "how far"]
+        return any(kw in query for kw in keywords)
+
+    def _needs_extension_calculation(self, query: str) -> bool:
+        keywords = ["extension", "depth", "project", "extend", "rear", "beyond"]
+        return any(kw in query for kw in keywords)
+
+    def _needs_width_calculation(self, query: str) -> bool:
+        keywords = ["width", "wide", "half", "side"]
+        return any(kw in query for kw in keywords)
+
+    def _perform_area_calculations(
+        self,
+        parsed: dict[str, Any],
+        spatial: dict[str, Any],
+    ) -> list[CalculationOutput]:
+        results = []
+
+        plot_boundary = parsed.get("plot_boundary")
+        walls = parsed.get("walls", [])
+
+        if plot_boundary:
+            area_result = self.calculate_polygon_area(
+                list(plot_boundary.exterior.coords)
+            )
+            results.append(
+                CalculationOutput(
+                    calculation_type="area",
+                    value=area_result["area"],
+                    unit="m2",
+                    description="Plot boundary (curtilage) area",
+                )
+            )
+
+        if walls:
+            combined = unary_union(walls)
+            building_area = combined.area * self.MM2_TO_M2
+            results.append(
+                CalculationOutput(
+                    calculation_type="area",
+                    value=round(building_area, 2),
+                    unit="m2",
+                    description="Total building footprint area",
+                )
+            )
+
+        if plot_boundary and walls:
+            coverage = self.calculate_curtilage_coverage(
+                plot_boundary=plot_boundary,
+                buildings=walls,
+                original_house=spatial.get("original_footprint"),
+            )
+            results.append(
+                CalculationOutput(
+                    calculation_type="ratio",
+                    value=coverage["coverage_percent"],
+                    unit="%",
+                    description=f"Building coverage ({coverage['coverage_percent']}% of curtilage)",
+                    details=coverage,
+                )
+            )
+
+        return results
+
+    def _perform_distance_calculations(
+        self,
+        parsed: dict[str, Any],
+        spatial: dict[str, Any],
+    ) -> list[CalculationOutput]:
+        results = []
+
+        walls = parsed.get("walls", [])
+        plot_boundary = parsed.get("plot_boundary")
+
+        if walls and plot_boundary:
+            combined = unary_union(walls)
+            dist_result = self.calculate_min_distance_to_boundary(
+                building=combined,
+                boundary=plot_boundary,
+            )
+
+            results.append(
+                CalculationOutput(
+                    calculation_type="distance",
+                    value=dist_result["min_distance_m"],
+                    unit="m",
+                    description="Minimum distance from building to plot boundary",
+                )
+            )
+
+            if dist_result["within_2m"]:
+                results.append(
+                    CalculationOutput(
+                        calculation_type="flag",
+                        value=1,
+                        unit="boolean",
+                        description="Building is within 2m of boundary (eaves height limit applies)",
+                    )
+                )
+
+        return results
+
+    def _perform_extension_calculations(
+        self,
+        parsed: dict[str, Any],
+        spatial: dict[str, Any],
+    ) -> list[CalculationOutput]:
+        results = []
+
+        rear_wall = spatial.get("rear_wall")
+        extensions = parsed.get("extensions", [])
+
+        if rear_wall and extensions:
+            for i, ext in enumerate(extensions):
+                depth_result = self.calculate_extension_depth(
+                    extension=ext,
+                    rear_wall=rear_wall,
+                )
+
+                results.append(
+                    CalculationOutput(
+                        calculation_type="length",
+                        value=depth_result["depth_m"],
+                        unit="m",
+                        description=f"Extension {i + 1} depth beyond rear wall",
+                    )
+                )
+
+        return results
+
+    def _perform_width_calculations(
+        self,
+        parsed: dict[str, Any],
+        spatial: dict[str, Any],
+    ) -> list[CalculationOutput]:
+        results = []
+
+        original = spatial.get("original_footprint")
+
+        if original:
+            width_result = self.calculate_building_width(original)
+            results.append(
+                CalculationOutput(
+                    calculation_type="length",
+                    value=width_result["width_m"],
+                    unit="m",
+                    description="Original house width",
+                )
+            )
+
+            results.append(
+                CalculationOutput(
+                    calculation_type="length",
+                    value=round(width_result["width_m"] / 2, 2),
+                    unit="m",
+                    description="Maximum allowed side extension width (50% of original)",
+                )
+            )
+
+        return results

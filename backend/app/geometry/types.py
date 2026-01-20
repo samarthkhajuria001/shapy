@@ -5,7 +5,7 @@ Contains enums and data classes used throughout the geometry module.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from shapely.geometry import LineString, Polygon
 
@@ -111,3 +111,34 @@ class CalculationOutput:
     unit: str
     description: str
     details: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ComplianceCheckResult:
+    """Result from a single compliance rule check."""
+
+    rule_id: str
+    rule_description: str
+    pdf_page: int
+    compliant: Optional[bool]
+    measured_value: Optional[float] = None
+    threshold: Optional[float] = None
+    unit: Optional[str] = None
+    message: str = ""
+    error: Optional[str] = None
+    checks: list = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "rule_id": self.rule_id,
+            "rule_description": self.rule_description,
+            "pdf_page": self.pdf_page,
+            "compliant": self.compliant,
+            "measured_value": self.measured_value,
+            "threshold": self.threshold,
+            "unit": self.unit,
+            "message": self.message,
+            "error": self.error,
+            "checks": self.checks,
+        }
