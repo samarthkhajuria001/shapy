@@ -7,6 +7,7 @@ import {
   DrawingObject,
   ContextMetadata,
   ClarificationRequestPayload,
+  MessageItem,
 } from '../models';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -188,6 +189,33 @@ export class SessionStore {
     this.isAgentThinking.set(false);
     this.streamingContent.set('');
     this.pendingClarification.set(null);
+  }
+
+  loadMessages(apiMessages: MessageItem[]): void {
+    const messages: ChatMessage[] = apiMessages.map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(msg.timestamp),
+      confidence: msg.confidence as 'high' | 'medium' | 'low' | undefined,
+      queryType: msg.query_type,
+      sources: msg.sources?.map((s) => ({
+        section: s.section,
+        page: s.page,
+        relevance: s.relevance,
+      })),
+      calculations: msg.calculations?.map((c) => ({
+        calculation_type: c.calculation_type,
+        result: c.result,
+        unit: c.unit,
+        limit: c.limit,
+        compliant: c.compliant,
+        margin: c.margin,
+        description: '',  // API doesn't store description, use empty string
+      })),
+      suggestedFollowups: msg.suggested_followups,
+    }));
+    this.messages.set(messages);
   }
 
   // Auth actions

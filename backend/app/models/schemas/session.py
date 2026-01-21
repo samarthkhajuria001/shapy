@@ -89,3 +89,24 @@ class SessionListResponse(BaseModel):
 
     sessions: list[SessionListItem]
     count: int
+
+
+class MessageItem(BaseModel):
+    """A single chat message."""
+
+    id: str
+    role: str
+    content: str
+    timestamp: datetime
+    confidence: str | None = None
+    query_type: str | None = None
+    sources: list[dict[str, Any]] | None = None
+    calculations: list[dict[str, Any]] | None = None
+    suggested_followups: list[str] | None = None
+
+
+class MessagesResponse(BaseModel):
+    """Response containing chat messages for a session."""
+
+    messages: list[MessageItem]
+    count: int

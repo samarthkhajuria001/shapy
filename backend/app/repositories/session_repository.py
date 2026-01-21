@@ -21,6 +21,9 @@ class SessionRepository:
     def _context_key(self, session_id: str) -> str:
         return f"session:{session_id}:context"
 
+    def _messages_key(self, session_id: str) -> str:
+        return f"session:{session_id}:messages"
+
     def _user_sessions_key(self, user_id: str) -> str:
         return f"user:{user_id}:sessions"
 
@@ -193,3 +196,64 @@ class SessionRepository:
         if meta is None:
             return None
         return meta.get("user_id")
+
+    async def add_message(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        message_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Add a message to the session's conversation history.
+        Returns the message dict or None if session not found.
+        """
+        if not await self.exists(session_id):
+            return None
+
+        now = datetime.now(timezone.utc)
+        message = {
+            "id": message_id or str(uuid.uuid4()),
+            "role": role,
+            "content": content,
+            "timestamp": now.isoformat(),
+            **(metadata or {}),
+        }
+
+        messages_key = self._messages_key(session_id)
+        await self.redis.rpush(messages_key, json.dumps(message))
+        await self.redis.expire(messages_key, self.ttl_seconds)
+
+        return message
+
+    async def get_messages(
+        self,
+        session_id: str,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Get all messages for a session.
+        Returns empty list if session not found or no messages.
+        """
+        messages_key = self._messages_key(session_id)
+
+        if limit:
+            data = await self.redis.lrange(messages_key, -limit, -1)
+        else:
+            data = await self.redis.lrange(messages_key, 0, -1)
+
+        messages = []
+        for item in data:
+            try:
+                messages.append(json.loads(item))
+            except json.JSONDecodeError:
+                continue
+
+        return messages
+
+    async def clear_messages(self, session_id: str) -> bool:
+        """Clear all messages for a session. Returns True if cleared."""
+        messages_key = self._messages_key(session_id)
+        result = await self.redis.delete(messages_key)
+        return result > 0

@@ -11,6 +11,7 @@ import {
   ContextUpdateResponse,
   ContextGetResponse,
   DrawingObject,
+  MessagesResponse,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -61,5 +62,9 @@ export class SessionService {
 
   getContext(sessionId: string): Observable<ContextGetResponse> {
     return this.http.get<ContextGetResponse>(`${environment.apiUrl}/session/${sessionId}/context`);
+  }
+
+  getMessages(sessionId: string): Observable<MessagesResponse> {
+    return this.http.get<MessagesResponse>(`${environment.apiUrl}/session/${sessionId}/messages`);
   }
 }

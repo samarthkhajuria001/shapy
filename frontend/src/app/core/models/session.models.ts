@@ -78,3 +78,29 @@ export interface PolylineObject {
 }
 
 export type DrawingObject = LineObject | PolylineObject;
+
+// Chat message types for API
+export interface MessageItem {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  confidence?: string;
+  query_type?: string;
+  sources?: Array<{ section: string; page?: number; relevance: number }>;
+  calculations?: Array<{
+    calculation_type: string;
+    result: number;
+    unit: string;
+    limit?: number;
+    compliant?: boolean;
+    margin?: number;
+    description?: string;
+  }>;
+  suggested_followups?: string[];
+}
+
+export interface MessagesResponse {
+  messages: MessageItem[];
+  count: number;
+}

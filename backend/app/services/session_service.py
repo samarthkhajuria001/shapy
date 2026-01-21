@@ -20,6 +20,8 @@ from app.models.schemas.session import (
     ContextGetResponse,
     ContextMetadata,
     ContextUpdateResponse,
+    MessageItem,
+    MessagesResponse,
     SessionCreateResponse,
     SessionListItem,
     SessionListResponse,
@@ -182,6 +184,33 @@ class SessionService:
         """Delete session. Returns True if deleted."""
         await self._get_meta_with_ownership(session_id, user_id)
         return await self.repo.delete(session_id, user_id)
+
+    async def get_messages(
+        self, session_id: str, user_id: str
+    ) -> MessagesResponse:
+        """Get chat messages for a session."""
+        await self._get_meta_with_ownership(session_id, user_id)
+
+        messages = await self.repo.get_messages(session_id)
+
+        items = []
+        for msg in messages:
+            timestamp = datetime.fromisoformat(msg["timestamp"])
+            items.append(
+                MessageItem(
+                    id=msg["id"],
+                    role=msg["role"],
+                    content=msg["content"],
+                    timestamp=timestamp,
+                    confidence=msg.get("confidence"),
+                    query_type=msg.get("query_type"),
+                    sources=msg.get("sources"),
+                    calculations=msg.get("calculations"),
+                    suggested_followups=msg.get("suggested_followups"),
+                )
+            )
+
+        return MessagesResponse(messages=items, count=len(items))
 
     async def _get_meta_with_ownership(
         self, session_id: str, user_id: str

@@ -8,6 +8,7 @@ from app.models.schemas.session import (
     ContextGetResponse,
     ContextUpdateRequest,
     ContextUpdateResponse,
+    MessagesResponse,
     SessionCreateResponse,
     SessionListResponse,
     SessionStatusResponse,
@@ -82,3 +83,13 @@ async def get_context(
 ) -> ContextGetResponse:
     """Get drawing context for a session."""
     return await session_service.get_context(session_id, current_user.id)
+
+
+@router.get("/{session_id}/messages", response_model=MessagesResponse)
+async def get_messages(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    session_service: SessionService = Depends(get_session_service),
+) -> MessagesResponse:
+    """Get chat messages for a session."""
+    return await session_service.get_messages(session_id, current_user.id)

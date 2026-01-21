@@ -248,6 +248,15 @@ async def handle_query(
         len(content),
     )
 
+    # Store user message in Redis
+    try:
+        redis = get_redis()
+        settings = get_settings()
+        session_repo = SessionRepository(redis, settings.session_ttl_hours * 3600)
+        await session_repo.add_message(session_id, "user", content)
+    except Exception as e:
+        logger.warning("Failed to store user message: %s", str(e))
+
     from app.agent.streaming import get_streaming_orchestrator, StreamEventType
     from app.api.ws.schemas import (
         ClarificationRequestPayload,
@@ -355,6 +364,41 @@ async def handle_query(
                 )
                 complete_msg = ServerMessage.response_complete(complete_payload)
                 await manager.send_message(connection_id, complete_msg.model_dump())
+
+                # Store assistant message in Redis
+                try:
+                    redis = get_redis()
+                    settings = get_settings()
+                    session_repo = SessionRepository(redis, settings.session_ttl_hours * 3600)
+                    await session_repo.add_message(
+                        session_id,
+                        "assistant",
+                        data.get("final_answer", ""),
+                        message_id=data.get("message_id"),
+                        metadata={
+                            "confidence": data.get("confidence", "medium"),
+                            "query_type": data.get("query_type", "unknown"),
+                            "sources": [
+                                {"section": s.section, "page": s.page, "relevance": s.relevance}
+                                for s in sources
+                            ],
+                            "calculations": [
+                                {
+                                    "calculation_type": c.calculation_type,
+                                    "result": c.result,
+                                    "unit": c.unit,
+                                    "limit": c.limit,
+                                    "compliant": c.compliant,
+                                    "margin": c.margin,
+                                    "description": c.description,
+                                }
+                                for c in calculations
+                            ],
+                            "suggested_followups": data.get("suggested_followups", []),
+                        },
+                    )
+                except Exception as e:
+                    logger.warning("Failed to store assistant message: %s", str(e))
 
             elif event.event_type == StreamEventType.ERROR:
                 error_msg = ServerMessage.error(

@@ -1,4 +1,5 @@
 import { Injectable, inject, OnDestroy } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Subject, Observable, timer, EMPTY } from 'rxjs';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { retry, catchError, takeUntil } from 'rxjs/operators';
@@ -18,11 +19,13 @@ import {
   ContextUpdatedPayload,
   ResponseCompletePayload,
   ErrorPayload,
+  MessagesResponse,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class WebSocketService implements OnDestroy {
   private readonly store = inject(SessionStore);
+  private readonly http = inject(HttpClient);
   private socket$: WebSocketSubject<ServerMessage> | null = null;
   private readonly destroy$ = new Subject<void>();
   private readonly messages$ = new Subject<ServerMessage>();
@@ -205,6 +208,24 @@ export class WebSocketService implements OnDestroy {
   private handleConnected(payload: ConnectedPayload): void {
     this.store.setConnectionStatus('connected');
     this.store.updateContextVersion(payload.context_version);
+
+    // Load message history from backend
+    if (this.currentSessionId) {
+      this.http
+        .get<MessagesResponse>(
+          `${environment.apiUrl}/session/${this.currentSessionId}/messages`
+        )
+        .subscribe({
+          next: (response) => {
+            if (response.messages && response.messages.length > 0) {
+              this.store.loadMessages(response.messages);
+            }
+          },
+          error: (error) => {
+            console.warn('Failed to load message history:', error);
+          },
+        });
+    }
   }
 
   private handleReasoningStep(payload: ReasoningStepPayload): void {
